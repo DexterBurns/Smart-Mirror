@@ -1,0 +1,380 @@
+from tkinter import *
+from functools import partial
+from threading import Timer
+import threading
+from time import sleep
+
+#API call imports
+import requests
+from pprint import pprint
+
+
+#Function to make weather calls every x minutes
+def weatherCalls():
+    global unit
+    global zipCode
+    global temperature 
+    global temperature_max 
+    global temperature_min 
+    global weather
+    global city
+    url = "http://api.openweathermap.org/data/2.5/weather?zip={},us&appid=50f99008308871e6c25a18bb9ad93214&units={}".format(zipCode, unit)
+    result = requests.get(url)
+    print(result)
+    data = result.json()
+    #pprint(data)
+
+    city = data["name"]
+    weather = data["weather"][0]["description"]
+         
+    temperature = data["main"]["temp"]
+    temperature_max = data["main"]["temp_max"]
+    temperature_min = data["main"]["temp_min"]
+    weather = data["weather"][0]["description"]
+
+
+def closeWindow():
+    
+    title_frame.destroy()
+    entry_frame.destroy()
+    button_frame.destroy()
+    window.destroy()
+    zip_code = str(zipCode_string.get())
+    unit = str(unit_string.get())
+    print(zip_code)
+    
+     
+  
+#window start
+window = Tk()
+  
+#Window properties
+window.title("GUI")
+window.geometry("1920x1080")
+window.configure(bg='black')
+
+#Creating a frames for the Big Title up top and the places to enter unit and zip code
+title_frame = Frame(window)
+entry_frame = Frame(window)
+button_frame = Frame(window)
+
+#Placing positions for the frames(putting them onto the screen)
+title_frame.grid(column = 0, row = 0)
+entry_frame.grid(column = 0, row = 1)
+entry_frame.place(relx = 0.5, rely = 0.5, anchor = CENTER)
+title_frame.place(relx = 0.5, rely = 0.3, anchor = CENTER)
+button_frame.place(relx = 0.5, rely = 0.7, anchor = CENTER)
+#Creating the title
+title_text = Label(title_frame, text = "Welcome to the Smart Vanity Mirror!", font = ("Calibri", 40, 'bold'), bg = 'black', fg = 'white')
+title_text.grid(column = 0, row = 0)
+#Creating zip code and unit entry boxes and their labels
+zipCode_string = StringVar()
+unit_string = StringVar()
+
+#Creating the Entries
+zipCode_entry = Entry(entry_frame, bg = 'white', fg = 'black', textvariable = zipCode_string)
+zipCode_entry.focus()
+unit_entry = Entry(entry_frame, bg = 'white', fg = 'black', textvariable = unit_string)
+
+#creating the labels for the entries
+zipCode_label = Label(entry_frame, text = "Please enter your ZipCode:", bg = 'black', fg = 'white', font = ("Calibri", 25))
+unit_label = Label(entry_frame, text = "Please enter your preferred unit (metric/imperial):", bg = 'black', fg = 'white', font = ("Calibri", 25))
+
+#Positioning the entry and labels
+zipCode_entry.grid(column = 1, row = 0, sticky = "nsew")
+zipCode_label.grid(column = 0, row = 0, sticky = "nsew")
+unit_entry.grid(column = 1, row = 1, sticky = "nsew")
+unit_label.grid(column = 0, row = 1, sticky = "nsew")
+
+#Creating button to be Pressed when user has entered unit and zip code
+continue_button = Button(button_frame, text = "Press to Continue", fg = "white", bg = "black", command = closeWindow)
+continue_button.grid(column = 0, row = 0)
+
+#first window loop end
+window.mainloop()
+
+#Weather Api calls will be made here
+zipCode = str(zipCode_string.get())
+unit = str(unit_string.get())
+
+if unit == "metric":
+    speed = "m/s"
+    degrees = "Celsius"
+    
+elif unit == "imperial":
+    speed = "Mph"
+    degrees = "Fahrenheit"
+
+
+
+ 
+#Calling weather API function
+#All variables needed for weather calls
+temperature = 0 
+temperature_max = 0 
+temperature_min = 0
+weather = 0
+city = 0
+#repeating weather calls every 5 mins
+
+weatherCalls()
+weather_Calls = Timer(300.0, weatherCalls)
+weather_Calls.start()
+
+
+#beginning second window
+window2 = Tk()
+window2.title("GUI")
+window2.geometry("1920x1080")
+window2.configure(bg='black')
+
+#Creating frames for all our blocks
+date_time_frame = Frame(window2)
+city_weather_frame = Frame(window2)
+compliment_news_frame = Frame(window2)
+
+#date and time frame positioning
+date_time_frame.place(relx = 0, rely = 0, anchor = NW)
+
+
+#clock module
+from time import strftime
+
+def dig_clock(): 
+    string = strftime('%I:%M:%S %p') 
+    clock.config(text = string) 
+    clock.after(1000, dig_clock)
+    
+clock = Label(window2, font = ('calibri', 40, 'bold'), background = 'black', foreground = 'white')     
+clock.grid(column = 0, row = 1, sticky = "nsew")
+dig_clock()
+
+#date module
+import datetime as dt
+current_date = Label(window2, text=f"{dt.datetime.now():%a, %b %d %Y}", fg="white", bg="black", font=("calibri", 40))
+current_date.grid(column = 0, row = 0, sticky = "nsew")
+
+#city and weather frame positioning
+city_weather_frame.place(relx = 1.0, rely = 0.0, anchor = NE)
+#city_weather_frame.grid(column = 0, row = 0)
+
+
+#creating label for city and weather data
+city_label = Label(city_weather_frame, text = "Your City: {}".format(city), bg = 'black', fg = 'white', anchor = 'e', font = ('calibri', 20, 'bold') )
+temperature_label = Label(city_weather_frame, text = "Current Temperature: {} {}".format(temperature, degrees), bg = 'black', fg = 'white', anchor = 'e',font = ('calibri', 20, 'bold'))
+max_temperature_label = Label(city_weather_frame, text = "Max Temperature: {} {}".format(temperature_max, degrees), bg = 'black', fg = 'white', anchor = 'e', font = ('calibri', 20, 'bold'))
+min_temperature_label = Label(city_weather_frame, text = "Min Temperature: {} {}".format(temperature_min, degrees), bg = 'black', fg = 'white', anchor = 'e',font = ('calibri', 20, 'bold'))
+weather_description_label = Label(city_weather_frame, text = "Weather Description: {}".format(weather), bg = 'black', fg = 'white', anchor = 'e',font = ('calibri', 20, 'bold'))
+
+
+#gridding for the labels
+city_label.grid(column = 0, row = 0, sticky ="nsew")
+temperature_label.grid(column = 0, row = 1, sticky ="nsew")
+max_temperature_label.grid(column = 0, row = 2, sticky ="nsew")
+min_temperature_label.grid(column = 0, row = 3, sticky ="nsew")
+weather_description_label.grid(column = 0, row = 4, sticky ="nsew")
+
+
+#Compliment and news frame positioning
+compliment_news_frame.place(relx = 0.5, rely = 1.0, anchor = S)
+compliment = StringVar()
+description = StringVar()
+source = StringVar()
+
+#Puttin the threading functions (compliment and news) in the window down here becuz tkinter no like threading
+#Newsapi function
+def newsApi():
+    while(1):
+        x=0
+        global source
+        global description
+        news_url = "http://newsapi.org/v2/top-headlines?country=us&apiKey=c9a500db757c4b1fb39bb7be77ee061c"
+        news_results = requests.get(news_url)
+        print(news_results, "newsApi")
+        news_data = news_results.json()
+        description_f = 0
+        source_f = 0
+        for x in range(0,9):
+            description_f = news_data["articles"][x]["description"]
+            source_f = news_data["articles"][x]["source"]["name"]            
+            description.set(description_f)
+            source.set(source_f)
+            sleep(15)
+
+#Complimenting function
+def compliment_function():
+    while(1):
+        quotes = ["Have a wonderful day!",
+
+        "Today will be your best day yet!",
+
+        "You're amazing!",
+
+        "Take your challenges head on!",
+
+        "Keep chasing your dreams!",
+
+        "Another day another dollar!",
+
+        "Blessings will come your way!",
+
+        "Be yourself.",
+
+        "Greatness never rests!",
+
+        "Enjoy your day!",
+        ]
+        
+        global compliment
+        x = 0
+        for x in range(0,9):
+            compliment.set(quotes[x])
+            sleep(10)
+            
+
+#Threading the function that repeatedly calls news and compliments
+compliment_thread = threading.Thread(target=compliment_function)
+compliment_thread.start()
+
+news_thread = threading.Thread(target = newsApi)
+news_thread.start()
+
+#now beginning Compliment and News Labels
+#Making a compliment frame for the compliment jsut for the spacing
+compliment_frame = Frame(window2)
+compliment_frame.place(relx = 0.5, rely = 0.8, anchor = CENTER)
+compliment_label = Label(compliment_frame, textvariable = compliment, bg = 'black', fg = 'white', font = ('calibri', 20))
+news_label = Label(compliment_news_frame, textvariable = description, bg = 'black', fg = 'white', font = ('calibri', 20, 'bold'))
+source_label = Label(compliment_news_frame, textvariable = source, bg = 'black', fg = 'white', font = ('calibri', 20, 'bold'))
+
+#gridding for the compliment and news labels
+compliment_label.grid(column = 0, row = 0, sticky = "nsew")
+news_label.grid(column = 0, row = 1, sticky = "nsew")
+source_label.grid(column = 0, row = 2, sticky = "nsew")
+
+#now we need to start PIR Sensor, ALS, ADC and LED
+#PIR gonna be 2 radio buttons of on and off
+#ALS gonna be a Scale widget from 0 volts to 4.7
+#ADC gonna convert ALS slider values to bits
+#LED gonna be labels that light up
+
+#Creating a new frame for the parts
+parts = Frame(window2)
+parts.place(relx = 0.5, rely = 0.6, anchor = CENTER)
+
+#Creating PIR sensor radio buttons
+onoroff = IntVar()
+pir_on = Radiobutton(parts, text = "PIR On", value = 1, variable = onoroff)
+pir_off = Radiobutton(parts, text = "PIR Off", value = 0, variable = onoroff)
+pir_on.grid(column = 0, row = 1)
+pir_off.grid(column = 1, row = 1)
+hold = onoroff.get()
+print(hold)
+
+
+#Creating the Ambient Light Sensor
+ambient_scaler = Scale(parts, from_= 0, to = 3.3, orient = HORIZONTAL, resolution = 0.1)
+ambient_scaler.grid(column = 1, row = 2)
+ambient_scaler_label = Label(parts, text = "ALS Voltage:")
+ambient_scaler_label.grid(column = 0, row = 2)
+
+#Convert function
+def conversion():
+    global onoroff
+    if onoroff.get() == 1:
+        global ambient_scaler
+        global adc_label
+        adc_label.destroy()
+        adc_label = Label(parts, text = bin(round(ambient_scaler.get())))
+        adc_label.grid(column = 1, row = 3)
+        hold = ambient_scaler.get()
+        if hold > 2.5:
+           led_1 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+           led_2 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+           led_3 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+           led_4 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+           led_5 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+           led_6 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+           led_1.grid(column = 0, row = 0)
+           led_2.grid(column = 1, row = 0)
+           led_3.grid(column = 2, row = 0)
+           led_4.grid(column = 3, row = 0)
+           led_5.grid(column = 4, row = 0)
+           led_6.grid(column = 5, row = 0)
+       
+        elif (hold >= 1.0) & (hold <= 2.5):
+           led_1 = Label(led_frame, bg = 'white', fg ='grey' , text = "On")
+           led_2 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+           led_3 = Label(led_frame, bg = 'white', fg ='grey' , text = "On")
+           led_4 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+           led_5 = Label(led_frame, bg = 'white', fg ='grey' , text = "On")
+           led_6 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+           led_1.grid(column = 0, row = 0)
+           led_2.grid(column = 1, row = 0)
+           led_3.grid(column = 2, row = 0)
+           led_4.grid(column = 3, row = 0)
+           led_5.grid(column = 4, row = 0)
+           led_6.grid(column = 5, row = 0)
+           
+           
+        elif (hold < 1.0):
+           led_1 = Label(led_frame, bg = 'white', fg ='grey' , text = "On")
+           led_2 = Label(led_frame, bg = 'white', fg ='grey' , text = "On")
+           led_3 = Label(led_frame, bg = 'white', fg ='grey' , text = "On")
+           led_4 = Label(led_frame, bg = 'white', fg ='grey' , text = "On")
+           led_5 = Label(led_frame, bg = 'white', fg ='grey' , text = "On")
+           led_6 = Label(led_frame, bg = 'white', fg ='grey' , text = "On")
+           led_1.grid(column = 0, row = 0)
+           led_2.grid(column = 1, row = 0)
+           led_3.grid(column = 2, row = 0)
+           led_4.grid(column = 3, row = 0)
+           led_5.grid(column = 4, row = 0)
+           led_6.grid(column = 5, row = 0)
+            
+    elif onoroff.get() == 0:
+        poop = 0
+        led_1 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+        led_2 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+        led_3 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+        led_4 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+        led_5 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+        led_6 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+        led_1.grid(column = 0, row = 0)
+        led_2.grid(column = 1, row = 0)
+        led_3.grid(column = 2, row = 0)
+        led_4.grid(column = 3, row = 0)
+        led_5.grid(column = 4, row = 0)
+        led_6.grid(column = 5, row = 0)
+        
+        
+#Creating the ADC, converts slider values to bits
+adc_label = Label(parts, text = ambient_scaler.get())
+adc_label.grid(column = 1, row = 3)
+adc_label_text = Label(parts, text = "ADC Bits: ")
+adc_label_text.grid(column = 0, row = 3)
+
+#if pir sensor is on then start other stuff dont forget so we'll start the button that starts everything here
+convert_button = Button(parts, text = "Convert", command = conversion)
+convert_button.grid(column = 0, columnspan = 2, row = 0)
+    
+#Creating the LED's made of 6 Labels and they have black backgrounds with a border to distinguish them
+#Making a frame for the LED's
+led_frame = Frame(window2, borderwidth = 2, relief = "ridge")
+led_frame.place(relx = 0.5, rely = 0.4, anchor = CENTER)
+
+led_1 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+led_2 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+led_3 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+led_4 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+led_5 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+led_6 = Label(led_frame, bg = 'black', fg ='grey' , text = "Off")
+led_1.grid(column = 0, row = 0)
+led_2.grid(column = 1, row = 0)
+led_3.grid(column = 2, row = 0)
+led_4.grid(column = 3, row = 0)
+led_5.grid(column = 4, row = 0)
+led_6.grid(column = 5, row = 0)
+
+
+
+window2.mainloop()
